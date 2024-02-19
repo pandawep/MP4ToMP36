@@ -1,2 +1,2 @@
-pyrogram
-pydub
+pyrogram==1.3.9
+pydub==0.25.1
