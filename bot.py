@@ -1,44 +1,51 @@
-from pyrogram import Client, filters
-from pydub import AudioSegment
-from io import BytesIO
-from config import API_ID, API_HASH, BOT_TOKEN
+import os
+from telegram import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# Define your start message
-START_MESSAGE = """
-Hello! I'm your MP4 to MP3 converter bot. Just send me an MP4 file, and I'll convert it to MP3 for you!
-"""
+# Importing credentials from config.py
+from config import BOT_TOKEN
 
-# Initialize the Pyrogram client
-app = Client(
-    "mp4_to_mp3_bot",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN
-)
+# Define your sample questions and answers
+qa_pairs = {
+    "How are you?": "I'm good, thank you!",
+    "What is your name?": "I'm a bot designed to help you.",
+    "Who created you?": "I was created by [Your Name]",
+    "Tell me a joke": "Why don't scientists trust atoms? Because they make up everything!",
+    "Tell me a fact": "Did you know that the shortest war in history was between Britain and Zanzibar on August 27, 1896? It lasted only 38 minutes.",
+    # Add more questions and answers as needed
+}
 
-# Define the start command handler
-@app.on_message(filters.command(["start"]))
-def start_command(client, message):
-    # Send the start message
-    message.reply_text(START_MESSAGE)
+# Define a function to handle incoming messages
+def message_handler(update: Update, context: CallbackContext) -> None:
+    # Get the text of the incoming message
+    message_text = update.message.text
 
-# Define the audio conversion handler
-@app.on_message(filters.document & filters.video)
-def convert_to_mp3(client, message):
-    # Download the video file
-    video_file = client.download_media(message)
+    # Check if the message text is in our question-answer pairs
+    if message_text in qa_pairs:
+        # Reply with the corresponding answer
+        update.message.reply_text(qa_pairs[message_text])
+    else:
+        # If the question is not recognized, reply with a default message
+        update.message.reply_text("I'm sorry, I don't understand that question.")
 
-    # Convert MP4 to MP3
-    sound = AudioSegment.from_file(video_file)
-    audio_buffer = BytesIO()
-    sound.export(audio_buffer, format='mp3')
+def main():
+    # Create the Updater and pass it your bot's token
+    updater = Updater(BOT_TOKEN)
 
-    # Send the MP3 file to the user
-    client.send_audio(
-        chat_id=message.chat.id,
-        audio=audio_buffer.getvalue(),
-        reply_to_message_id=message.message_id
-    )
+    # Get the dispatcher to register handlers
+    dispatcher = updater.dispatcher
 
-# Run the bot
-app.run()
+    # Define a message handler
+    message_handler = MessageHandler(Filters.text & ~Filters.command, message_handler)
+
+    # Add the message handler to the dispatcher
+    dispatcher.add_handler(message_handler)
+
+    # Start the Bot
+    updater.start_polling()
+
+    # Run the bot until you press Ctrl-C
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
